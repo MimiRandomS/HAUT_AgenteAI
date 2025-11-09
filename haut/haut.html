@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Agente Terapéutico - Chat</title>
+  <style>
+    /* Reset y tipografía */
+    * { box-sizing: border-box; margin:0; padding:0; }
+    html,body { height:100%; }
+    body {
+      font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg,#0f1724 0%, #1b2330 60%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+      color:#0b1220;
+    }
+
+    /* Contenedor principal */
+    .wrap {
+      width:100%;
+      max-width:1100px;
+      display:flex;
+      gap:36px;
+      align-items:flex-start;
+      justify-content:center;
+    }
+
+    /* Panel de info / left */
+    .info {
+      flex:1;
+      min-width:300px;
+      max-width:560px;
+      background: linear-gradient(180deg,#0f1724,#172033);
+      border-radius:16px;
+      padding:26px;
+      color:#e6eef8;
+      box-shadow: 0 18px 60px rgba(2,6,23,0.6);
+    }
+    .brand {
+      display:flex;
+      gap:14px;
+      align-items:center;
+      margin-bottom:18px;
+    }
+    .brand .avatar {
+      width:72px; height:72px; border-radius:14px;
+      background: linear-gradient(135deg,#6b28c8,#3aa0ff);
+      display:flex; align-items:center; justify-content:center;
+      font-size:32px; color:white;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+    }
+    .brand h1 { font-size:20px; margin-bottom:4px; }
+    .brand p { margin:0; color:#cfe6ff; opacity:0.95; font-size:13px; }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border-radius:12px;
+      padding:18px;
+      margin-top:14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+    .card h2 { color:#bfe1ff; font-size:16px; margin-bottom:10px; }
+    .card p { color:#c8def3; font-size:14px; line-height:1.5; }
+
+    .features { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+    .feature {
+      background: rgba(255,255,255,0.03);
+      color:#a8d1ff;
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:13px;
+      border:1px solid rgba(255,255,255,0.02);
+    }
+
+    /* Panel chat / right */
+    .chat-panel {
+      width:420px;
+      min-width:320px;
+      border-radius:14px;
+      overflow:hidden;
+      box-shadow: 0 18px 60px rgba(2,6,23,0.6);
+      background: linear-gradient(180deg,#f8fafc,#eef6fb);
+      display:flex;
+      flex-direction:column;
+    }
+
+    .chat-header {
+      background:#0b1722;
+      color:#fff;
+      height:64px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:0 16px;
+    }
+    .chat-header .left {
+      display:flex; gap:12px; align-items:center;
+    }
+    .chat-avatar {
+      width:46px; height:46px; border-radius:10px;
+      background: linear-gradient(135deg,#6b28c8,#3aa0ff);
+      display:flex; align-items:center; justify-content:center;
+      color:white; font-weight:700; box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+    }
+    .chat-title { font-weight:600; font-size:15px; }
+    .chat-sub { font-size:12px; color:#b7cde3; opacity:0.9; }
+
+    .chat-body {
+      height:560px; /* espacio para el widget */
+      background:#fff;
+      position:relative;
+    }
+
+    /* contenedor interior donde forzaremos el iframe a caber */
+    #aai-chat-inner {
+      width:100%; height:100%;
+      position:relative;
+      overflow:hidden;
+    }
+    /* Forzamos que cualquier iframe que llevemos se ajuste al 100% */
+    #aai-chat-inner iframe,
+    #aai-chat-inner > div {
+      position:absolute !important;
+      inset:0 !important;
+      width:100% !important;
+      height:100% !important;
+      border:0 !important;
+      margin:0 !important;
+      padding:0 !important;
+      background:transparent !important;
+      box-shadow:none !important;
+    }
+
+    .chat-footer {
+      padding:14px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      background:linear-gradient(180deg,#f1f5f9,#eef6fb);
+      border-top: 1px solid rgba(15,23,33,0.03);
+    }
+
+    .btn {
+      background: linear-gradient(135deg,#6b28c8,#3aa0ff);
+      color:white; padding:10px 16px; border-radius:999px; border:0;
+      cursor:pointer; font-weight:600;
+      box-shadow: 0 8px 18px rgba(52, 97, 255, 0.12);
+    }
+    .btn[disabled] { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
+
+    /* estado de carga */
+    .loader {
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
+      z-index:4; color:#6b7f99; font-size:14px;
+    }
+
+    /* responsive */
+    @media (max-width:980px) {
+      .wrap { flex-direction:column; align-items:center; gap:20px; padding:16px; }
+      .chat-panel { width:92%; max-width:520px; }
+      .info { max-width:92%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- PANEL INFORMATIVO -->
+    <section class="info" aria-labelledby="brandTitle">
+      <div class="brand">
+        <div class="avatar" aria-hidden="true">🌀</div>
+        <div>
+          <h1 id="brandTitle">Agente Terapéutico</h1>
+          <p>Escucha, guía y acompaña — apoyo emocional con enfoque práctico y empático.</p>
+        </div>
+      </div>
+
+      <div class="card" role="region" aria-label="Descripción">
+        <h2>Qué hace este asistente</h2>
+        <p>Este agente está diseñado para ofrecer contención, sugerencias prácticas y pequeñas herramientas para mejorar tu bienestar emocional. No reemplaza a un profesional clínico, pero puede orientarte, darte ejercicios breves y ayudarte a organizar pensamientos.</p>
+        <div class="features" aria-hidden="true">
+          <div class="feature">Escucha empática</div>
+          <div class="feature">Ejercicios breves</div>
+          <div class="feature">Resumen de sesión</div>
+          <div class="feature">Privacidad</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <h2>Consejos rápidos</h2>
+        <p>- Si buscas contención momentánea, escribe cómo te sientes. <br>- Si quieres trabajar un tema, prueba ejercicios de 2 minutos. <br>- Para temas clínicos complejos, busca ayuda profesional.</p>
+      </div>
+
+    </section>
+
+    <!-- PANEL DEL CHAT -->
+    <aside class="chat-panel" aria-label="Chat del agente">
+      <header class="chat-header">
+        <div class="left">
+          <div class="chat-avatar" aria-hidden="true">AT</div>
+          <div>
+            <div class="chat-title">Agente terapéutico psicológico</div>
+            <div class="chat-sub">Disponible ahora — confidencial</div>
+          </div>
+        </div>
+        <div></div>
+      </header>
+
+      <div class="chat-body">
+        <!-- Loader visual -->
+        <div id="loader" class="loader">El chat aún no está activo. Pulsa "Iniciar chat".</div>
+
+        <!-- Contenedor limpio donde forzaremos el iframe a encajar -->
+        <div id="aai-chat-inner" role="region" aria-live="polite"></div>
+      </div>
+
+      <div class="chat-footer">
+        <button id="btnInit" class="btn" aria-pressed="false">Iniciar chat</button>
+        <div style="flex:1"></div>
+        <small style="color:#72839a">Privado • No sustituye terapia</small>
+      </div>
+    </aside>
+  </div>
+
+<script>
+  const PROJECT_ID = "f5177a6c3c42464086f3c8";
+  const FRAME_TYPE = "window";
+
+  let scriptAppended = false;
+
+  function initChatbot() {
+    const btn = document.getElementById('btnInit');
+    const loader = document.getElementById('loader');
+    const chatPanel = document.querySelector('.chat-panel'); // ← referencia al aside
+
+    // ocultar el panel al iniciar
+    chatPanel.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+    chatPanel.style.opacity = "0";
+    chatPanel.style.transform = "scale(0.97)";
+    setTimeout(() => chatPanel.style.display = "none", 500);
+
+    if (scriptAppended) return;
+    scriptAppended = true;
+
+    window.project_id = PROJECT_ID;
+    window.frame_type = FRAME_TYPE;
+
+    const s = document.createElement('script');
+    s.src = "https://ai.automationanywhere.com/loader.min.js";
+    s.setAttribute('project_id', PROJECT_ID);
+    s.setAttribute('frame_type', FRAME_TYPE);
+    s.defer = true;
+    document.body.appendChild(s);
+
+    btn.textContent = "Cargando...";
+    btn.disabled = true;
+    btn.style.opacity = "0.9";
+
+    const target = document.getElementById('aai-chat-inner');
+    const bodyObserver = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        for (const node of m.addedNodes) {
+          if (!(node instanceof HTMLElement)) continue;
+          if (node.tagName === 'IFRAME' && node.src.includes('automationanywhere')) {
+            moveInto(node);
+            return;
+          }
+          const iframeInside = node.querySelector && node.querySelector('iframe');
+          if (iframeInside && iframeInside.src.includes('automationanywhere')) {
+            moveInto(node);
+            return;
+          }
+        }
+      }
+    });
+
+    bodyObserver.observe(document.body, { childList: true, subtree: true });
+
+    const failTimeout = setTimeout(() => {
+      if (!target.querySelector('iframe') && !target.querySelector('div')) {
+        loader.textContent = "No se detectó el chat. Revisa el project_id o tu conexión.";
+        document.getElementById('btnInit').textContent = "Reintentar";
+        document.getElementById('btnInit').disabled = false;
+        scriptAppended = false;
+        bodyObserver.disconnect();
+      }
+    }, 9000);
+
+    function moveInto(node) {
+      loader.style.display = "none";
+      try {
+        if (node.tagName === 'IFRAME') {
+          node.style.position = 'absolute';
+          node.style.inset = '0';
+          node.style.width = '100%';
+          node.style.height = '100%';
+          node.style.border = '0';
+          target.appendChild(node);
+        } else {
+          target.appendChild(node);
+          const i = node.querySelector('iframe');
+          if (i) {
+            i.style.position = 'absolute';
+            i.style.inset = '0';
+            i.style.width = '100%';
+            i.style.height = '100%';
+            i.style.border = '0';
+          }
+        }
+      } catch (e) {
+        console.warn('Error al mover widget:', e);
+      } finally {
+        clearTimeout(failTimeout);
+        btn.textContent = "Chat activo";
+        btn.style.background = "linear-gradient(135deg,#2fb67a,#2da6f7)";
+        btn.disabled = true;
+      }
+    }
+  }
+
+  document.getElementById('btnInit').addEventListener('click', initChatbot);
+</script>
+
+</body>
+</html>
